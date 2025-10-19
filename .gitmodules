@@ -1,0 +1,3 @@
+[submodule "develop/aozora_summarizer_2/aozora-summaries"]
+	path = develop/aozora_summarizer_2/aozora-summaries
+	url = https://github.com/eine03kleine-del/aozora-summaries.git
