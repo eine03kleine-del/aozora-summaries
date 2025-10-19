@@ -2,32 +2,52 @@ name: Build and Deploy
 
 on:
   schedule:
-    - cron: "0 3 * * 0"  # 毎週日曜朝3時に実行（日本時間12時）
-  workflow_dispatch:      # 手動実行も可能
+    - cron: "0 3 * * 0"   # 毎週日曜 午前3時（日本時間12時）に自動実行
+  workflow_dispatch:       # 手動実行も許可
+  push:
+    branches:
+      - main               # mainブランチへのpush時にも実行
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      # --- ソースコード取得 ---
+      - name: Checkout repository
         uses: actions/checkout@v4
 
+      # --- Pythonセットアップ ---
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
+      # --- 依存パッケージのインストール ---
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install beautifulsoup4 requests tqdm transformers
 
+      # --- 要約生成スクリプトの実行 ---
       - name: Generate summaries
-        run: python generator.py
+        run: |
+          python develop/aozora_summarizer_2/generator.py
 
+      # --- 出力確認（index.htmlやsummariesを含むかチェック） ---
+      - name: Verify generated files
+        run: |
+          ls -R summaries || echo "No summaries folder found!"
+          ls -R data || echo "No data folder found!"
+          ls -l index.html || echo "No index.html found!"
+
+      # --- GitHub Pages へ自動デプロイ ---
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: .
+          publish_branch: gh-pages   # 出力をgh-pagesブランチに自動配置
+          force_orphan: true
+
